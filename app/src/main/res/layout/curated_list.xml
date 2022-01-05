@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/curated_container"
+    android:layout_margin="4dp"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/black"
+    app:cardCornerRadius="0dp">
+    <ImageView
+        android:id="@+id/imageView_curated"
+        android:scaleType="centerCrop"
+        android:layout_width="match_parent"
+        android:layout_height="250dp"/>
+
+    <RelativeLayout
+        android:id="@+id/relative_placeholder"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:background="@android:color/transparent"
+        android:layout_height="250dp">
+        <TextView
+            android:visibility="gone"
+            android:id="@+id/textView_curated_name"
+            android:text="Name"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textAlignment="center"
+            android:layout_alignParentBottom="true"
+            android:singleLine="true"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:scrollHorizontally="true"
+            android:padding="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </RelativeLayout>
+</androidx.cardview.widget.CardView>
