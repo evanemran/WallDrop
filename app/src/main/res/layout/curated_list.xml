@@ -21,20 +21,31 @@
         android:background="@android:color/transparent"
         android:layout_height="250dp">
         <TextView
-            android:visibility="gone"
+            android:visibility="visible"
             android:id="@+id/textView_curated_name"
             android:text="Name"
-            android:textColor="@color/black"
+            android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textAlignment="center"
+            android:layout_toStartOf="@+id/imageView_save"
             android:layout_alignParentBottom="true"
             android:singleLine="true"
             android:ellipsize="marquee"
+            android:background="#80000000"
             android:marqueeRepeatLimit="marquee_forever"
             android:scrollHorizontally="true"
             android:padding="8dp"
             android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+        <ImageView
+            android:id="@+id/imageView_save"
+            android:padding="8dp"
+            android:background="#80000000"
+            android:src="@drawable/ic_fav"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

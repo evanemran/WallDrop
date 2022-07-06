@@ -1,15 +1,25 @@
 package com.evanemran.walldrop;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -17,22 +27,33 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.evanemran.walldrop.Adapters.CuratedRecyclerAdapter;
+import com.evanemran.walldrop.Adapters.DrawerAdapter;
+import com.evanemran.walldrop.Listeners.ClickListener;
 import com.evanemran.walldrop.Listeners.CuratedClickListener;
 import com.evanemran.walldrop.Listeners.CuratedResponseListener;
 import com.evanemran.walldrop.Listeners.SearchResponseListener;
 import com.evanemran.walldrop.Models.CuratedApiResponse;
+import com.evanemran.walldrop.Models.NavMenu;
 import com.evanemran.walldrop.Models.Photo;
 import com.evanemran.walldrop.Models.SearchApiResponse;
+import com.evanemran.walldrop.fragment.CategoryFragment;
+import com.evanemran.walldrop.fragment.CollectionFragment;
+import com.evanemran.walldrop.fragment.FavoritesFragment;
+import com.evanemran.walldrop.fragment.HomeFragment;
+import com.evanemran.walldrop.fragment.SettingsFragment;
 import com.github.ybq.android.spinkit.sprite.Sprite;
 import com.github.ybq.android.spinkit.style.Wave;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.navigation.NavigationView;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements CuratedClickListener {
+public class MainActivity extends AppCompatActivity implements CuratedClickListener, NavigationView.OnNavigationItemSelectedListener {
 
     RecyclerView recyclerView_home;
     CuratedRecyclerAdapter curatedRecyclerAdapter;
@@ -44,6 +65,9 @@ public class MainActivity extends AppCompatActivity implements CuratedClickListe
     String new_query = "";
     Toolbar toolbar;
     ProgressBar progressBar;
+    DrawerLayout drawer;
+    TextView version_name;
+    RecyclerView recycler_nav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,45 +77,35 @@ public class MainActivity extends AppCompatActivity implements CuratedClickListe
         recyclerView_home = findViewById(R.id.recycler_home);
         button_next = findViewById(R.id.button_next);
         button_prev = findViewById(R.id.button_prev);
-        toolbar = findViewById(R.id.toolbar);
-        toolbar.inflateMenu(R.menu.menu);
+        version_name = findViewById(R.id.version_name);
+        recycler_nav = findViewById(R.id.recycler_nav);
 
-        progressBar = (ProgressBar)findViewById(R.id.loader);
-        Sprite anim = new Wave();
-        progressBar.setIndeterminateDrawable(anim);
+        try {
+            PackageInfo pInfo =
+                    getApplicationContext().getPackageManager().getPackageInfo(getApplicationContext().getPackageName(), 0);
+            version_name.setText("Version: " + pInfo.versionName);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
 
-        progressBar.setVisibility(View.VISIBLE);
+        replaceFragment(new HomeFragment());
 
-        manager = new RequestManager(this);
-        manager.getCuratedWallpapers(listener, "1");
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-        button_next.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                progressBar.setVisibility(View.VISIBLE);
-                recyclerView_home.setVisibility(View.GONE);
+//        toolbar.inflateMenu(R.menu.menu);
 
-                if (isSearched){
-                    String search_next_page = String.valueOf(search_page+1);
-                    manager.searchWallpapers(search_listener, new_query, search_next_page);
-                }
-                else{
-                    String next_page = String.valueOf(page+1);
-                    manager.getCuratedWallpapers(listener, next_page);
-                }
-            }
-        });
-        button_prev.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (page>1){
-                    progressBar.setVisibility(View.VISIBLE);
-                    recyclerView_home.setVisibility(View.GONE);
-                    String prev_page = String.valueOf(page-1);
-                    manager.getCuratedWallpapers(listener, prev_page);
-                }
-            }
-        });
+        drawer = findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle =new ActionBarDrawerToggle(
+                this,drawer,toolbar,R.string.open_nav_drawer, R.string.close_nav_drawer
+        );
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+
+        setupNavMenu();
 
         //toolbar
         toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
@@ -127,6 +141,21 @@ public class MainActivity extends AppCompatActivity implements CuratedClickListe
         });
     }
 
+    private void setupNavMenu() {
+        List<NavMenu> navMenuList = new ArrayList<>();
+
+        navMenuList.add(NavMenu.HOME);
+        navMenuList.add(NavMenu.CATEGORIES);
+        navMenuList.add(NavMenu.COLLECTIONS);
+        navMenuList.add(NavMenu.FAVORITES);
+        navMenuList.add(NavMenu.SETTINGS);
+
+        recycler_nav.setHasFixedSize(true);
+        recycler_nav.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        DrawerAdapter drawerAdapter = new DrawerAdapter(this, navMenuList, navMenuClickListener);
+        recycler_nav.setAdapter(drawerAdapter);
+    }
+
     private final CuratedResponseListener listener = new CuratedResponseListener() {
         @Override
         public void onFetch(CuratedApiResponse response, String message) {
@@ -157,6 +186,38 @@ public class MainActivity extends AppCompatActivity implements CuratedClickListe
         startActivity(new Intent(MainActivity.this, WallpaperActivity.class)
         .putExtra("photo", photo));
     }
+
+    private void replaceFragment(Fragment fragment){
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, fragment);
+        fragmentTransaction.commit();
+
+    }
+
+    private final ClickListener<NavMenu> navMenuClickListener = new ClickListener<NavMenu>() {
+        @Override
+        public void onCLicked(NavMenu object) {
+            switch (object){
+                case HOME:
+                    replaceFragment(new HomeFragment());
+                    break;
+                case CATEGORIES:
+                    replaceFragment(new CategoryFragment());
+                    break;
+                case COLLECTIONS:
+                    replaceFragment(new CollectionFragment());
+                    break;
+                case FAVORITES:
+                    replaceFragment(new FavoritesFragment());
+                    break;
+                case SETTINGS:
+                    replaceFragment(new SettingsFragment());
+                    break;
+            }
+            drawer.closeDrawer(GravityCompat.START);
+        }
+    };
 
 
     @Override
@@ -212,4 +273,9 @@ public class MainActivity extends AppCompatActivity implements CuratedClickListe
         imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
     }
 
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
+    }
 }
